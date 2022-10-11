@@ -3,13 +3,22 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      talos:
+        image: ghcr.io/siderolabs/talos:v1.2.5 # renovate github-releases:siderolabs/talos
+        env:
+          PLATFORM: container
+        volumes: ["vol1:/etc/cni", "vol2:/run", "vol3:/var/lib/containerd", "vol4:/var/lib/kubelet"]
+        options: --privileged
     steps:
       - name: Checkout
         uses: actions/checkout@v3.1.0
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2.0.0
+        uses: hashicorp/setup-terraform@v2.0.2
         with:
-          terraform_version: v1.3.2 # renovate github-releases:hashicorp/terraform
+          terraform_version: v1.3.3 # renovate github-releases:hashicorp/terraform
+      - name: Init Terraform
+        run: terraform init -lockfile=readonly
       - name: Validate Terraform files
         run: terraform validate
       - name: Check Terraform file formatting
@@ -21,4 +30,14 @@ jobs:
       - name: TFLint
         run: tflint --module
       - name: Apply Terraform scripts
-        run: terraform apply -auto-approve
+        run: timeout 30s terraform apply -auto-approve -var "nodes=[\"$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${{ job.services.talos.id }})\"]"
+      - name: Setup kubectl
+        uses: yokawasa/action-setup-kube-tools@v0.8.2
+        with:
+          setup-tools: kubectl
+          kubectl: 1.25.3 # renovate github-releases:kubernetes/kubernetes
+      - name: Wait until node ready
+        run: |
+          export KUBECONFIG=kubeconfig
+          timeout 2m bash -c 'while (( $(kubectl get nodes -o name | wc -l) < 1 )); do kubectl get nodes; sleep 1; done'
+          kubectl wait --for=condition=Ready nodes --all --timeout=1m
