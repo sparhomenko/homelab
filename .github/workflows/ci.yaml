@@ -1,0 +1,24 @@
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.1.0
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2.0.0
+        with:
+          terraform_version: v1.3.2 # renovate github-releases:hashicorp/terraform
+      - name: Validate Terraform files
+        run: terraform validate
+      - name: Check Terraform file formatting
+        run: terraform fmt -check -diff -recursive
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v2.0.1
+        with:
+          tflint_version: v0.41.0 # renovate github-releases:terraform-linters/tflint
+      - name: TFLint
+        run: tflint --module
+      - name: Apply Terraform scripts
+        run: terraform apply -auto-approve
