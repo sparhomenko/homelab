@@ -1,17 +1,12 @@
 terraform {
   required_version = "1.3.3"
   required_providers {
-    local = {
-      version = "2.2.3"
-    }
     talos = {
       source  = "siderolabs/talos"
       version = "0.1.0-alpha.9"
     }
   }
 }
-
-provider "talos" {}
 
 resource "talos_machine_secrets" "main" {}
 
@@ -36,6 +31,10 @@ resource "talos_machine_configuration_apply" "main" {
   machine_configuration = talos_machine_configuration_controlplane.main.machine_config
   endpoint              = each.key
   node                  = each.key
+  config_patches = [yamlencode({
+    machine : { certSANs : var.nodes }
+    cluster : { allowSchedulingOnControlPlanes : true }
+  })]
 }
 
 resource "talos_machine_bootstrap" "main" {
@@ -43,6 +42,9 @@ resource "talos_machine_bootstrap" "main" {
   talos_config = talos_client_configuration.main.talos_config
   endpoint     = var.nodes[0]
   node         = var.nodes[0]
+  provisioner "local-exec" {
+    command = "until nc -z ${var.nodes[0]} 6443; do echo Waiting for API server...; sleep 1; done"
+  }
 }
 
 resource "talos_cluster_kubeconfig" "main" {
@@ -53,6 +55,6 @@ resource "talos_cluster_kubeconfig" "main" {
 
 resource "local_file" "kubeconfig" {
   content         = talos_cluster_kubeconfig.main.kube_config
-  filename        = "kubeconfig"
+  filename        = "../kubeconfig"
   file_permission = "0644"
 }

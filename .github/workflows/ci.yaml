@@ -19,25 +19,20 @@ jobs:
           terraform_version: v1.3.3 # renovate github-releases:hashicorp/terraform
       - name: Init Terraform
         run: terraform init -lockfile=readonly
+        working-directory: terraform
       - name: Validate Terraform files
         run: terraform validate
+        working-directory: terraform
       - name: Check Terraform file formatting
         run: terraform fmt -check -diff -recursive
+        working-directory: terraform
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v2.0.1
         with:
           tflint_version: v0.41.0 # renovate github-releases:terraform-linters/tflint
       - name: TFLint
         run: tflint --module
+        working-directory: terraform
       - name: Apply Terraform scripts
-        run: timeout 30s terraform apply -auto-approve -var "nodes=[\"$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${{ job.services.talos.id }})\"]"
-      - name: Setup kubectl
-        uses: yokawasa/action-setup-kube-tools@v0.8.2
-        with:
-          setup-tools: kubectl
-          kubectl: 1.25.3 # renovate github-releases:kubernetes/kubernetes
-      - name: Wait until node ready
-        run: |
-          export KUBECONFIG=kubeconfig
-          timeout 2m bash -c 'while (( $(kubectl get nodes -o name | wc -l) < 1 )); do kubectl get nodes; sleep 1; done'
-          kubectl wait --for=condition=Ready nodes --all --timeout=1m
+        run: terraform apply -auto-approve -var "nodes=[\"$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${{ job.services.talos.id }})\"]"
+        working-directory: terraform
