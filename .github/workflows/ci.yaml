@@ -29,7 +29,7 @@ jobs:
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v2.0.1
         with:
-          tflint_version: v0.42.1 # renovate github-releases:terraform-linters/tflint
+          tflint_version: v0.42.2 # renovate github-releases:terraform-linters/tflint
       - name: TFLint
         run: tflint --module
         working-directory: terraform
