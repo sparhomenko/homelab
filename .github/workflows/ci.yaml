@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       talos:
-        image: ghcr.io/siderolabs/talos:v1.2.5 # renovate github-releases:siderolabs/talos
+        image: ghcr.io/siderolabs/talos:v1.2.6 # renovate github-releases:siderolabs/talos
         env:
           PLATFORM: container
         volumes: ["vol1:/etc/cni", "vol2:/run", "vol3:/var/lib/containerd", "vol4:/var/lib/kubelet"]
