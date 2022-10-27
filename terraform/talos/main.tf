@@ -55,6 +55,6 @@ resource "talos_cluster_kubeconfig" "main" {
 
 resource "local_file" "kubeconfig" {
   content         = talos_cluster_kubeconfig.main.kube_config
-  filename        = "../kubeconfig"
-  file_permission = "0644"
+  filename        = "kubeconfig"
+  file_permission = "0600"
 }

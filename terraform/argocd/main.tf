@@ -37,7 +37,7 @@ resource "kubectl_manifest" "main" {
 }
 
 resource "kubectl_manifest" "project" {
-  depends_on = [kubectl_manifest.main]
+  depends_on = [kubectl_manifest.main["/apis/apiextensions.k8s.io/v1/customresourcedefinitions/appprojects.argoproj.io"]]
   yaml_body  = <<-EOT
     apiVersion: argoproj.io/v1alpha1
     kind: AppProject
@@ -55,20 +55,61 @@ resource "kubectl_manifest" "project" {
   EOT
 }
 
-resource "kubectl_manifest" "app" {
-  yaml_body = <<-EOT
-      apiVersion: argoproj.io/v1alpha1
-      kind: Application
-      metadata:
-        name: gitops
-        namespace: ${kubectl_manifest.project.namespace}
-      spec:
-        project: ${kubectl_manifest.project.name}
-        source:
-          repoURL: https://github.com/sparhomenko/homelab.git
-          targetRevision: HEAD
-          path: gitops
-        destination:
-          server: https://kubernetes.default.svc
-  EOT
+resource "kubernetes_config_map_v1_data" "main" {
+  depends_on = [kubectl_manifest.main["/api/v1/configmaps/argocd-cm"]]
+  metadata {
+    name      = "argocd-cm"
+    namespace = "argocd"
+  }
+  data = {
+    "resource.customizations.health.argoproj.io_Application" = <<-EOT
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil then
+        if obj.status.health ~= nil then
+          hs.status = obj.status.health.status
+          if obj.status.health.message ~= nil then
+            hs.message = obj.status.health.message
+          end
+        end
+      end
+      return hs
+    EOT
+  }
+}
+
+resource "kubernetes_manifest" "app" {
+  depends_on = [kubectl_manifest.main["/apis/apiextensions.k8s.io/v1/customresourcedefinitions/applications.argoproj.io"]]
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name      = "gitops"
+      namespace = kubectl_manifest.project.namespace
+    }
+    spec = {
+      project = kubectl_manifest.project.name
+      source = {
+        repoURL        = "https://github.com/sparhomenko/homelab.git"
+        targetRevision = "HEAD"
+        path           = "gitops"
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = "argocd"
+      }
+      syncPolicy = {
+        automated = {}
+      }
+    }
+  }
+  wait {
+    fields = {
+      "status.sync.status"                = "Synced"
+      "status.health.status"              = "Healthy"
+      "status.resources[1].health.status" = "Healthy"
+      "status.resources[2].health.status" = "Healthy"
+    }
+  }
 }

@@ -1,3 +1,10 @@
 {
-  extends: ['sparhomenko/renovate-config', 'sparhomenko/renovate-config:comment']
+  extends: ['sparhomenko/renovate-config', 'sparhomenko/renovate-config:comment'],
+  regexManagers: [
+    {
+      fileMatch: ['\\.yaml$'],
+      matchStrings: ['\\s*chart:\\s+(?<depName>.+?)\\s*\n\\s*repoURL:\\s+(?<registryUrl>.+?)\\s*\n\\s*targetRevision:\\s+(?<currentValue>.+?)\\s*\n'],
+      datasourceTemplate: 'helm'
+    }
+  ]
 }
