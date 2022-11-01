@@ -5,7 +5,7 @@ terraform {
       version = "2.2.3"
     }
     kubernetes = {
-      version = "2.14.0"
+      version = "2.15.0"
     }
     talos = {
       source  = "siderolabs/talos"
