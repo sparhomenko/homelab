@@ -11,7 +11,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3.1.0
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2.0.2
+        uses: hashicorp/setup-terraform@v2.0.3
         with:
           terraform_version: v1.3.3 # renovate github-releases:hashicorp/terraform
       - name: Init Terraform
@@ -61,7 +61,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3.1.0
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2.0.2
+        uses: hashicorp/setup-terraform@v2.0.3
         with:
           terraform_version: v1.3.3 # renovate github-releases:hashicorp/terraform
       - name: Init Terraform
