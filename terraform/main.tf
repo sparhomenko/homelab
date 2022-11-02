@@ -9,7 +9,7 @@ terraform {
     }
     talos = {
       source  = "siderolabs/talos"
-      version = "0.1.0-alpha.9"
+      version = "0.1.0-alpha.10"
     }
     kubectl = {
       source  = "gavinbunney/kubectl"
