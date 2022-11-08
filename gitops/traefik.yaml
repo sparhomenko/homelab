@@ -9,7 +9,7 @@ spec:
   source:
     chart: traefik
     repoURL: https://helm.traefik.io/traefik
-    targetRevision: 19.0.3
+    targetRevision: 19.0.4
     helm:
       parameters:
         - name: image.tag
