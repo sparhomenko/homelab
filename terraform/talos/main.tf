@@ -16,7 +16,7 @@ resource "talos_machine_configuration_controlplane" "main" {
   machine_secrets    = talos_machine_secrets.main.machine_secrets
   docs_enabled       = false
   examples_enabled   = false
-  kubernetes_version = "1.25.3" # renovate github-releases:kubernetes/kubernetes
+  kubernetes_version = "1.25.4" # renovate github-releases:kubernetes/kubernetes:^v(?<version>.*)$
 }
 
 resource "talos_client_configuration" "main" {
