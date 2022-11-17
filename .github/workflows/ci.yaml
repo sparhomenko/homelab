@@ -13,7 +13,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2.0.3
         with:
-          terraform_version: v1.3.4 # renovate github-releases:hashicorp/terraform
+          terraform_version: v1.3.5 # renovate github-releases:hashicorp/terraform
       - name: Init Terraform
         run: terraform init -lockfile=readonly
       - name: Validate Terraform files
@@ -63,7 +63,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2.0.3
         with:
-          terraform_version: v1.3.4 # renovate github-releases:hashicorp/terraform
+          terraform_version: v1.3.5 # renovate github-releases:hashicorp/terraform
       - name: Init Terraform
         run: terraform init -lockfile=readonly
         working-directory: terraform
