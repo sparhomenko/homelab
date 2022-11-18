@@ -13,7 +13,7 @@ spec:
     helm:
       parameters:
         - name: image.tag
-          value: 2.9.4 # renovate docker:traefik
+          value: v2.9.5 # renovate docker:traefik
   destination:
     server: https://kubernetes.default.svc
     namespace: traefik-system
