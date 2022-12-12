@@ -1,0 +1,30 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: plex
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/truecharts/charts.git
+    targetRevision: plex-12.0.2
+    path: charts/stable/plex
+    helm:
+      values: |
+        persistence:
+          config:
+            type: emptyDir
+        service:
+          main:
+            type: LoadBalancer
+            loadBalancerIP: 192.168.10.1
+        env:
+          PLEX_PREFERENCE_NAME: FriendlyName=HomeNew
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: plex
+  syncPolicy:
+    automated: {}
+    syncOptions:
+      - CreateNamespace=true
