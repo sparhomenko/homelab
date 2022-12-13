@@ -9,7 +9,7 @@ jobs:
         working-directory: terraform
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.2.0
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2.0.3
         with:
@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.2.0
       - name: Lint YAML
         uses: ibiqlik/action-yamllint@v3.1.1
         with:
@@ -59,7 +59,7 @@ jobs:
         options: --privileged
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.2.0
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2.0.3
         with:
