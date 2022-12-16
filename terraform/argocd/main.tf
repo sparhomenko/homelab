@@ -12,7 +12,7 @@ terraform {
 }
 
 locals {
-  argocd_version = "v2.5.4" # renovate github-releases:argoproj/argo-cd
+  argocd_version = "v2.5.5" # renovate github-releases:argoproj/argo-cd
 }
 
 resource "kubernetes_namespace" "main" {
