@@ -52,7 +52,7 @@ jobs:
     needs: [terraform, gitops]
     services:
       talos:
-        image: ghcr.io/siderolabs/talos:v1.2.7
+        image: ghcr.io/siderolabs/talos:v1.3.0
         env:
           PLATFORM: container
         volumes: ["vol1:/etc/cni", "vol2:/run", "vol3:/var/lib/containerd", "vol4:/var/lib/kubelet"]
