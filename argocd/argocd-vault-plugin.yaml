@@ -1,0 +1,23 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-repo-server
+spec:
+  template:
+    spec:
+      volumes:
+        - name: google-credentials
+          secret:
+            secretName: argocd-vault-plugin-google-credentials
+      containers:
+        - name: argocd-repo-server
+          volumeMounts:
+            - name: google-credentials
+              mountPath: /var/run/secrets/google
+              readOnly: true
+      initContainers:
+        - name: download-tools
+          env:
+            - name: AVP_VERSION
+              value: 1.13.1
