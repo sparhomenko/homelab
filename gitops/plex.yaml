@@ -8,7 +8,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/truecharts/charts.git
-    targetRevision: plex-12.0.2
+    targetRevision: plex-12.0.3
     path: charts/stable/plex
     helm:
       values: |
@@ -26,5 +26,4 @@ spec:
     namespace: plex
   syncPolicy:
     automated: {}
-    syncOptions:
-      - CreateNamespace=true
+    syncOptions: [CreateNamespace=true]

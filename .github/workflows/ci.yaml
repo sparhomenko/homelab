@@ -2,31 +2,7 @@
 name: CI
 on: [push] # yamllint disable-line rule:truthy
 jobs:
-  terraform:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: terraform
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3.2.0
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2.0.3
-        with:
-          terraform_version: v1.3.6 # renovate github-releases:hashicorp/terraform
-      - name: Init Terraform
-        run: terraform init -lockfile=readonly
-      - name: Validate Terraform files
-        run: terraform validate
-      - name: Check Terraform file formatting
-        run: terraform fmt -check -diff -recursive
-      - name: Setup TFLint
-        uses: terraform-linters/setup-tflint@v3.0.0
-        with:
-          tflint_version: v0.43.0 # renovate github-releases:terraform-linters/tflint
-      - name: TFLint
-        run: tflint --module
-  gitops:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -49,27 +25,22 @@ jobs:
           KUBERNETES_VERSION: 1.26.0 # renovate github-releases:kubernetes/kubernetes:^v(?<version>.*)$
   test:
     runs-on: ubuntu-latest
-    needs: [terraform, gitops]
-    services:
-      talos:
-        image: ghcr.io/siderolabs/talos:v1.2.7
-        env:
-          PLATFORM: container
-        volumes: ["vol1:/etc/cni", "vol2:/run", "vol3:/var/lib/containerd", "vol4:/var/lib/kubelet"]
-        options: --privileged
+    needs: [validate]
     steps:
       - name: Checkout
         uses: actions/checkout@v3.2.0
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2.0.3
-        with:
-          terraform_version: v1.3.6 # renovate github-releases:hashicorp/terraform
-      - name: Init Terraform
-        run: terraform init -lockfile=readonly
-        working-directory: terraform
-      - name: Apply Terraform scripts
+      - name: Install Talos CLI
         run: |
-          IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${{ job.services.talos.id }})
-          terraform apply -auto-approve -var "nodes=[\"$IP\"]" -target module.argocd.kubectl_manifest.main
-          terraform apply -auto-approve -var "nodes=[\"$IP\"]"
-        working-directory: terraform
+          curl -Lo /usr/local/bin/talosctl https://github.com/siderolabs/talos/releases/download/v1.3.0/talosctl-$(uname -s | tr "[:upper:]" "[:lower:]")-amd64
+          chmod +x /usr/local/bin/talosctl
+      - name: Create Talos cluster
+        run: |
+          talosctl cluster create --help
+          talosctl cluster create \
+            --kubernetes-version 1.26.0 \
+            --workers 0 \
+            --config-patch-control-plane '{cluster: {allowSchedulingOnControlPlanes: true}}'
+          kubectl create namespace argocd
+          kubectl config set-context --current --namespace=argocd
+          kubectl apply -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.5.5/manifests/core-install.yaml
+          kubectl wait deployment argocd-repo-server --for condition=Available=True --timeout=60s
