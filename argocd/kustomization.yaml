@@ -4,7 +4,7 @@ kind: Kustomization
 namespace: argocd
 resources:
   - argocd.yaml
-  - https://github.com/argoproj/argo-cd//manifests/core-install?ref=v2.5.5
+  - https://github.com/argoproj/argo-cd//manifests/core-install?ref=v2.5.6
 patchesStrategicMerge:
   - https://raw.githubusercontent.com/argoproj-labs/argocd-vault-plugin/v1.13.1/manifests/cmp-configmap/argocd-repo-server-deploy.yaml
   - https://raw.githubusercontent.com/argoproj-labs/argocd-vault-plugin/v1.13.1/manifests/cmp-configmap/argocd-cm.yaml
