@@ -5,5 +5,26 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4.0.0
+      - name: Create cluster
+        run: |
+          curl -Lo talosctl --no-progress-meter https://github.com/siderolabs/talos/releases/download/${{ env.TALOS_VERSION }}/talosctl-$(uname -s | tr '[:upper:]' '[:lower:]')-$(dpkg --print-architecture)
+          chmod +x talosctl   
+          ./talosctl cluster create \
+            --workers 0 \
+            --config-patch-control-plane '{cluster: {allowSchedulingOnControlPlanes: true}}' \
+            --kubernetes-version "${{ env.KUBERNETES_VERSION }}"
+        env:
+          TALOS_VERSION: v1.5.1 # renovate github-releases:siderolabs/talos
+          KUBERNETES_VERSION: v1.28.1 # renovate github-releases:kubernetes/kubernetes
+      - name: Install Flux CLI
+        uses: fluxcd/flux2/action@v2.1.0
+      - name: Configure GitOps
+        run: |
+          flux install \
+            --components source-controller,kustomize-controller
+          flux create source git gitops \
+            --url ${{ github.server_url }}/${{ github.repository }}.git \
+            --commit ${{ github.sha }}
+          flux create kustomization gitops \
+            --source gitops \
+            --prune true
