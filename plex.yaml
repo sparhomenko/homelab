@@ -1,0 +1,92 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: HelmRepository
+metadata:
+  name: bjw-s-helm-charts
+  namespace: default
+spec:
+  interval: 30m
+  url: https://bjw-s.github.io/helm-charts/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: plex
+  namespace: default
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.5.1
+      interval: 15m
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s-helm-charts
+        namespace: default
+  values:
+    image:
+      repository: ghcr.io/linuxserver/plex
+      tag: 1.32.5.7349-8f4248874-ls182
+    service:
+      main: # TODO: move to LoadBalancer
+        ports:
+          http:
+            port: 32400
+    persistence:
+      config:
+        enabled: true
+        volumeName: plex
+      data:
+        enabled: true
+        volumeName: media
+        accessMode: ReadWriteMany
+        size: 1Gi
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: default
+  namespace: flux-system
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: plex
+spec:
+  storageClassName: default # TODO: move to iSCSI
+  accessModes: [ReadWriteOnce]
+  capacity:
+    storage: 1Gi
+  local:
+    path: /tmp
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/os
+            operator: In
+            values: [linux]
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media
+spec:
+  storageClassName: default # TODO: move to NFS
+  accessModes: [ReadWriteMany]
+  capacity:
+    storage: 1Gi
+  local:
+    path: /tmp
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/os
+            operator: In
+            values: [linux]

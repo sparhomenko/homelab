@@ -1,3 +1,17 @@
 {
-  extends: ['sparhomenko/renovate-config', 'sparhomenko/renovate-config:comment']
+  extends: ['sparhomenko/renovate-config'],
+  'helm-values': {
+    fileMatch: ['\\.yaml$']
+  },
+  flux: {
+    fileMatch: ['\\.yaml$'],
+  },
+  packageRules: [
+    {
+      matchManagers: ['helm-values'],
+      matchPackagePrefixes: ['ghcr.io/linuxserver/'],
+      matchDatasources: ['docker'],
+      versioning: 'regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)\\.(?<build>\\d+)-.*-ls(?<revision>\\d+)$'
+    }
+  ]
 }
