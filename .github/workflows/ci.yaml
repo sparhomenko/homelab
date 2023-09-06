@@ -21,7 +21,7 @@ jobs:
       - name: Configure GitOps
         run: |
           flux install \
-            --components source-controller,kustomize-controller
+            --components source-controller,kustomize-controller,helm-controller
           flux create source git gitops \
             --url ${{ github.server_url }}/${{ github.repository }}.git \
             --commit ${{ github.sha }}

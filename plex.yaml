@@ -1,0 +1,36 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: HelmRepository
+metadata:
+  name: bjw-s-helm-charts
+  namespace: default
+spec:
+  interval: 30m
+  url: https://bjw-s.github.io/helm-charts/
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: plex
+  namespace: default
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: app-template
+      version: 1.5.1 # https://bjw-s.github.io/helm-charts/
+      interval: 15m
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s-helm-charts
+        namespace: default
+  values:
+    image:
+      repository: ghcr.io/linuxserver/plex
+      tag: 1.32.5.7349-8f4248874-ls181
+    service:
+      main:
+        type: LoadBalancer
+        ports:
+          http:
+            port: 32400
