@@ -11,12 +11,10 @@ jobs:
         uses: ibiqlik/action-yamllint@v3.1.1
         with:
           strict: true
+      - name: Install Flux CLI
+        uses: fluxcd/flux2/action@v2.1.0
       - name: Build Kustomize resources
-        uses: karancode/kustomize-github-action@v1.3.2 # TODO: move to 'flux build kustomization --dry-run'
-        with:
-          kustomize_version: 5.1.1 # renovate github-releases:kubernetes-sigs/kustomize
-          kustomize_output_file: gitops.yaml
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: flux build kustomization flux-system --dry-run --kustomization-file flux/gotk-sync.yaml --path . > gitops.yaml
       # TODO: consider 'helm template' or 'flux build helmrelease --dry-run' (https://github.com/fluxcd/flux2/issues/2808)
       - name: Lint Kubernetes manifests
         uses: docker://ghcr.io/yannh/kubeconform:v0.6.3
@@ -27,6 +25,7 @@ jobs:
             -kubernetes-version ${{ env.KUBERNETES_VERSION }}
             -schema-location default
             -schema-location https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
+            -skip CustomResourceDefinition
             gitops.yaml
         env:
           KUBERNETES_VERSION: 1.28.1 # renovate github-releases:kubernetes/kubernetes:^v(?<version>.*)$
@@ -41,15 +40,15 @@ jobs:
         env:
           TALOS_VERSION: v1.5.2  # renovate github-releases:siderolabs/talos
           KUBERNETES_VERSION: v1.28.1  # renovate github-releases:kubernetes/kubernetes
-      - name: Install Flux CLI
-        uses: fluxcd/flux2/action@v2.1.0
       - name: Configure GitOps
         run: |
-          flux install \
-            --components source-controller,kustomize-controller,helm-controller
-          flux create source git gitops \
-            --url ${{ github.server_url }}/${{ github.repository }}.git \
-            --commit ${{ github.sha }}
-          flux create kustomization gitops \
-            --source gitops \
-            --prune true
+          kubectl apply -f flux/gotk-components.yaml # Install Flux CRDs before using them
+
+          ref='commit: ${{ github.sha }}'
+          kubectl create configmap flux-config -n flux-system --from-literal "ref=$ref"
+          sed -i='' "s/\${ref=branch: main}/$ref/" flux/gotk-sync.yaml
+          kubectl apply -k flux
+
+          kubectl wait deployment -n flux-system --for condition=Available -l 'app.kubernetes.io/part-of=flux'
+          flux reconcile kustomization flux-system --with-source
+          flux get all -A
