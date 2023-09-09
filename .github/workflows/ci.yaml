@@ -1,21 +1,46 @@
 ---
 name: CI
-on: [push]
+on: [push]  # yamllint disable-line rule:truthy
 jobs:
   ci:
     runs-on: ubuntu-22.04
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4.0.0
+      - name: Lint YAML
+        uses: ibiqlik/action-yamllint@v3.1.1
+        with:
+          strict: true
+      - name: Build Kustomize resources
+        uses: karancode/kustomize-github-action@v1.3.2 # TODO: move to 'flux build kustomization --dry-run'
+        with:
+          kustomize_version: 5.1.1 # renovate github-releases:kubernetes-sigs/kustomize
+          kustomize_output_file: gitops.yaml
+          token: ${{ secrets.GITHUB_TOKEN }}
+      # TODO: consider 'helm template' or 'flux build helmrelease --dry-run' (https://github.com/fluxcd/flux2/issues/2808)
+      - name: Lint Kubernetes manifests
+        uses: docker://ghcr.io/yannh/kubeconform:v0.6.3
+        with:
+          entrypoint: /kubeconform
+          args: >
+            -strict
+            -kubernetes-version ${{ env.KUBERNETES_VERSION }}
+            -schema-location default
+            -schema-location https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
+            gitops.yaml
+        env:
+          KUBERNETES_VERSION: 1.28.1 # renovate github-releases:kubernetes/kubernetes:^v(?<version>.*)$
       - name: Create cluster
         run: |
           curl -Lo talosctl --no-progress-meter https://github.com/siderolabs/talos/releases/download/${{ env.TALOS_VERSION }}/talosctl-$(uname -s | tr '[:upper:]' '[:lower:]')-$(dpkg --print-architecture)
-          chmod +x talosctl   
+          chmod +x talosctl
           ./talosctl cluster create \
             --workers 0 \
             --config-patch-control-plane '{cluster: {allowSchedulingOnControlPlanes: true}}' \
             --kubernetes-version "${{ env.KUBERNETES_VERSION }}"
         env:
-          TALOS_VERSION: v1.5.2 # renovate github-releases:siderolabs/talos
-          KUBERNETES_VERSION: v1.28.1 # renovate github-releases:kubernetes/kubernetes
+          TALOS_VERSION: v1.5.2  # renovate github-releases:siderolabs/talos
+          KUBERNETES_VERSION: v1.28.1  # renovate github-releases:kubernetes/kubernetes
       - name: Install Flux CLI
         uses: fluxcd/flux2/action@v2.1.0
       - name: Configure GitOps
@@ -28,5 +53,3 @@ jobs:
           flux create kustomization gitops \
             --source gitops \
             --prune true
-        env:
-          CSI_DRIVER_HOST_PATH_VERSION: v1.11.0
