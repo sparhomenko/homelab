@@ -1,6 +1,6 @@
 ---
 name: CI
-on: [push]  # yamllint disable-line rule:truthy
+on: [push] # yamllint disable-line rule:truthy
 jobs:
   ci:
     runs-on: ubuntu-22.04
@@ -29,7 +29,7 @@ jobs:
             gitops.yaml
         env:
           KUBERNETES_VERSION: 1.28.1 # renovate github-releases:kubernetes/kubernetes:^v(?<version>.*)$
-      - name: Create cluster
+      - name: Create cluster # TODO: cache something to speed up (2-2.5m)
         run: |
           curl -Lo talosctl --no-progress-meter https://github.com/siderolabs/talos/releases/download/${{ env.TALOS_VERSION }}/talosctl-$(uname -s | tr '[:upper:]' '[:lower:]')-$(dpkg --print-architecture)
           chmod +x talosctl
@@ -38,8 +38,8 @@ jobs:
             --config-patch-control-plane '{cluster: {allowSchedulingOnControlPlanes: true}}' \
             --kubernetes-version "${{ env.KUBERNETES_VERSION }}"
         env:
-          TALOS_VERSION: v1.5.2  # renovate github-releases:siderolabs/talos
-          KUBERNETES_VERSION: v1.28.1  # renovate github-releases:kubernetes/kubernetes
+          TALOS_VERSION: v1.5.2 # renovate github-releases:siderolabs/talos
+          KUBERNETES_VERSION: v1.28.1 # renovate github-releases:kubernetes/kubernetes
       - name: Configure GitOps
         run: |
           kubectl apply -f flux/gotk-components.yaml # Install Flux CRDs before using them
@@ -50,5 +50,9 @@ jobs:
           kubectl apply -k flux
 
           kubectl wait deployment -n flux-system --for condition=Available -l 'app.kubernetes.io/part-of=flux'
-          flux reconcile kustomization flux-system --with-source
+          flux reconcile kustomization flux-system --with-source --timeout 1m
+      - name: Extract debug info
+        if: failure()
+        run: |
           flux get all -A
+          flux events -A
