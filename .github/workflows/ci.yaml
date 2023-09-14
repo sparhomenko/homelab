@@ -29,20 +29,37 @@ jobs:
             gitops.yaml
         env:
           KUBERNETES_VERSION: 1.28.1 # renovate github-releases:kubernetes/kubernetes:^v(?<version>.*)$
-      - name: Create cluster # TODO: cache something to speed up (2-2.5m)
+      - name: Docker cache
+        uses: actions/cache@v3.3.2
+        with:
+          path: docker-cache
+          key: docker-cache-${{ hashFiles('docker-cache/*/docker/registry/v2/blobs/**') }}
+          restore-keys: docker-cache-
+      - name: Create cluster
         run: |
+          port=5000
+          for registry in registry.docker.io registry.k8s.io gcr.io ghcr.io quay.io
+          do
+            dir=./docker-cache/${registry//./-}
+            mkdir -p $dir
+            docker run -d -v $dir:/var/lib/registry -e REGISTRY_PROXY_REMOTEURL=https://$registry -p $port:5000 registry:${{ env.REGISTRY_VERSION }}
+            arg="$arg --registry-mirror $registry=http://172.17.0.1:$port"
+            ((port=port+1))
+          done
           curl -Lo talosctl --no-progress-meter https://github.com/siderolabs/talos/releases/download/${{ env.TALOS_VERSION }}/talosctl-$(uname -s | tr '[:upper:]' '[:lower:]')-$(dpkg --print-architecture)
           chmod +x talosctl
           ./talosctl cluster create \
             --workers 0 \
             --config-patch-control-plane '{cluster: {allowSchedulingOnControlPlanes: true}}' \
+            $arg \
             --kubernetes-version "${{ env.KUBERNETES_VERSION }}"
         env:
           TALOS_VERSION: v1.5.2 # renovate github-releases:siderolabs/talos
           KUBERNETES_VERSION: v1.28.1 # renovate github-releases:kubernetes/kubernetes
+          REGISTRY_VERSION: 2.8.2 # renovate github-releases:distribution/distribution:^v(?<version>.*)$
       - name: Configure GitOps
         run: |
-          kubectl apply -f flux/gotk-components.yaml # Install Flux CRDs before using them
+          kubectl apply -f flux/gotk-components.yaml
 
           ref='commit: ${{ github.sha }}'
           kubectl create configmap flux-config -n flux-system --from-literal "ref=$ref"
