@@ -12,7 +12,7 @@ jobs:
         with:
           strict: true
       - name: Install Flux CLI
-        uses: fluxcd/flux2/action@v2.1.0
+        uses: fluxcd/flux2/action@v2.1.1
       - name: Build Kustomize resources
         run: flux build kustomization flux-system --dry-run --kustomization-file flux/gotk-sync.yaml --path . > gitops.yaml
       # TODO: consider 'helm template' or 'flux build helmrelease --dry-run' (https://github.com/fluxcd/flux2/issues/2808)
