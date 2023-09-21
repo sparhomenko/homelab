@@ -14,7 +14,7 @@ jobs:
       - name: Install Flux CLI
         uses: fluxcd/flux2/action@v2.1.1
       - name: Build Kustomize resources
-        run: flux build kustomization flux-system --dry-run --kustomization-file flux/gotk-sync.yaml --path . > gitops.yaml
+        run: flux build kustomization flux-system --dry-run --kustomization-file flux/sync/sync.yaml --path . > gitops.yaml
       # TODO: consider 'helm template' or 'flux build helmrelease --dry-run' (https://github.com/fluxcd/flux2/issues/2808)
       - name: Lint Kubernetes manifests
         uses: docker://ghcr.io/yannh/kubeconform:v0.6.3
@@ -59,12 +59,12 @@ jobs:
           REGISTRY_VERSION: 2.8.2 # renovate github-releases:distribution/distribution:^v(?<version>.*)$
       - name: Configure GitOps
         run: |
-          kubectl apply -f flux/gotk-components.yaml
+          kubectl apply -k flux/install
 
           ref='commit: ${{ github.sha }}'
           kubectl create configmap flux-config -n flux-system --from-literal "ref=$ref"
-          sed -i='' "s/\${ref=branch: main}/$ref/" flux/gotk-sync.yaml
-          kubectl apply -k flux
+          sed -i='' "s/\${ref=branch: main}/$ref/" flux/sync/sync.yaml
+          kubectl apply -k flux/sync
 
           kubectl wait deployment -n flux-system --for condition=Available -l 'app.kubernetes.io/part-of=flux'
           flux reconcile kustomization flux-system --with-source --timeout 1m
@@ -73,3 +73,4 @@ jobs:
         run: |
           flux get all -A
           flux events -A
+          kubectl get all -A
