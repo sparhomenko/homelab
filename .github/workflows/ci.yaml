@@ -56,7 +56,7 @@ jobs:
         env:
           TALOS_VERSION: v1.5.2 # renovate github-releases:siderolabs/talos
           KUBERNETES_VERSION: v1.28.1 # renovate github-releases:kubernetes/kubernetes
-          REGISTRY_VERSION: 2.8.2 # renovate github-releases:distribution/distribution:^v(?<version>.*)$
+          REGISTRY_VERSION: 2.8.3 # renovate github-releases:distribution/distribution:^v(?<version>.*)$
       - name: Configure GitOps
         run: |
           kubectl apply -k flux/install
