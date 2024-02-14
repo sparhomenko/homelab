@@ -26,7 +26,7 @@ spec:
   values:
     image:
       repository: ghcr.io/linuxserver/plex
-      tag: 1.32.6.7468-07e0d4a7e-ls183
+      tag: 1.40.0.7998-c29d4c0c8-ls206
     service:
       main:
         type: LoadBalancer
